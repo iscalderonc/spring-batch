@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.0.xsd">
+
+	<!-- Using a dummy transactional manager because it's not using any transactional 
+		resource -->
+		
+		<!-- In charge of saving running information. This is a memory repository -->
+	<bean id="jobRepository"
+		class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="isolationLevelForCreate" value="ISOLATION_READ_COMMITTED"/>
+	</bean>
+	
+	<bean id="transactionManager" 
+    	  class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+
+	<!-- Batch entry point to launch it -->
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+		<property name="taskExecutor"> 
+			<bean class="org.springframework.core.task.SimpleAsyncTaskExecutor"	/>
+		</property>
+	</bean>
+
+	<batch:job id="importCustomer">
+		<batch:step id="massiveLoadCustomer">
+			<batch:tasklet>
+				<batch:chunk 
+							reader="customerReader" 
+							processor="customerProcessor"
+							writer="customerWriter" 
+				commit-interval="100" skip-limit="1">
+					<batch:skippable-exception-classes>
+													   
+					</batch:skippable-exception-classes>
+				</batch:chunk>
+			</batch:tasklet>
+		</batch:step>
+	</batch:job>
+	
+</beans>
